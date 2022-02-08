@@ -1,0 +1,56 @@
+# Where do most of our customers live?
+
+SELECT c.City as city, c.Country as country, COUNT(o.CustomerID) as count
+FROM Orders as o
+JOIN OrderDetails as od
+ON o.OrderID = od.OrderID
+JOIN Customers as c
+ON o.CustomerID = c.CustomerID
+GROUP BY city
+ORDER BY count DESC
+LIMIT 15
+
+# Which are our top customers in terms of money spend?
+
+SELECT o.CustomerID, SUM((od.UnitPrice + od.Quantity)*(1-od.Discount)) AS TotalPrice
+FROM Orders as o
+JOIN OrderDetails as od
+ON o.OrderID = od.OrderID
+GROUP BY o.CustomerID
+ORDER BY TotalPrice DESC
+LIMIT 15
+
+# Which are my top selling product categories?
+
+SELECT c.CategoryName as category, SUM((od.UnitPrice + od.Quantity)*(1-od.Discount)) AS TotalPrice
+FROM Orders as o
+JOIN OrderDetails as od
+ON o.OrderID = od.OrderID
+JOIN Products as p
+ON od.ProductID = p.ProductID
+JOIN Categories as c
+ON p.CategoryID = c.CategoryID
+GROUP BY category
+ORDER BY TotalPrice DESC
+
+# Who are my top 5 customers per category?
+
+WITH sub as (
+            SELECT c.CategoryName as category, o.CustomerID as customer, SUM((od.UnitPrice + od.Quantity)*(1-od.Discount)) AS TotalPrice
+            FROM Orders as o
+            JOIN OrderDetails as od
+            ON o.OrderID = od.OrderID
+            JOIN Products as p
+            ON od.ProductID = p.ProductID
+            JOIN Categories as c
+            ON p.CategoryID = c.CategoryID
+            GROUP BY category, customer
+            )
+    SELECT sub.*
+    FROM sub
+    WHERE sub.customer in (
+                        SELECT sub2.customer
+                        FROM sub sub2
+                        WHERE sub2.category = sub.category
+                        ORDER BY TotalPrice DESC
+                        LIMIT 5)
